@@ -27,6 +27,8 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
+    // Path mappings (using baseUrl with ignoreDeprecations for TS 6.x compatibility)
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["../../packages/threeme/src/*"],

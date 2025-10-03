@@ -21,6 +21,8 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
+    // Path mappings (using baseUrl with ignoreDeprecations for TS 6.x compatibility)
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*", "../../packages/threeme/src/*"],
