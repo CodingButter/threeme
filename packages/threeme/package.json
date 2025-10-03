@@ -1,0 +1,36 @@
+{
+  "name": "@acme/threeme",
+  "version": "0.1.0",
+  "description": "A minimal 3D rendering library using WebGL",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./core": "./src/core/index.ts",
+    "./objects": "./src/objects/index.ts",
+    "./scenes": "./src/scenes/index.ts",
+    "./cameras": "./src/cameras/index.ts",
+    "./geometry": "./src/geometry/index.ts",
+    "./materials": "./src/materials/index.ts",
+    "./meshes": "./src/meshes/index.ts",
+    "./renderers": "./src/renderers/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./lights": "./src/lights/index.ts"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "gl-matrix": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@acme/config": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": "latest"
+  },
+  "prettier": "@acme/config/prettier"
+}

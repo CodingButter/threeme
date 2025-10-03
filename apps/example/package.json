@@ -1,0 +1,23 @@
+{
+  "name": "@acme/example",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev:server": "bun run src/index.ts",
+    "dev": "cd ../.. && bun --watch run apps/example/src/index.ts",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write ."
+  },
+  "dependencies": {
+    "@acme/threeme": "workspace:*",
+    "gl-matrix": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@acme/config": "workspace:*",
+    "bun-plugin-tailwind": "latest",
+    "tailwindcss": "latest"
+  },
+  "prettier": "@acme/config/prettier"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@acme/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "eslint/index.js",
+    "ts/tsconfig.base.json",
+    "prettier/index.cjs"
+  ],
+  "exports": {
+    "./eslint": "./eslint/index.js",
+    "./tsconfig": "./ts/tsconfig.base.json",
+    "./prettier": "./prettier/index.cjs"
+  },
+  "peerDependencies": {
+    "eslint": ">=9",
+    "@typescript-eslint/parser": ">=8",
+    "@typescript-eslint/eslint-plugin": ">=8",
+    "eslint-plugin-import": ">=2.29",
+    "eslint-plugin-unused-imports": ">=3",
+    "eslint-config-prettier": ">=9",
+    "prettier": ">=3",
+    "typescript": ">=5.3"
+  }
+}

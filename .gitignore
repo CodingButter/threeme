@@ -41,6 +41,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# Bun
+bun.lockb
+.bun/
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 

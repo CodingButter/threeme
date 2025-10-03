@@ -1,0 +1,25 @@
+{
+  "name": "threeme-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "bun@1.2.23",
+  "scripts": {
+    "dev": "bun --hot run apps/example/src/index.ts",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write ."
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "eslint": "^9.10.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-unused-imports": "^3.2.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3"
+  }
+}
