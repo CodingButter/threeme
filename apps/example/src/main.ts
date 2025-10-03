@@ -82,7 +82,7 @@ function tick(now: number) {
   lampA.position = vec3.fromValues(Math.cos(t) * r, 0.5, Math.sin(t) * r);
   lampB.position = vec3.fromValues(Math.cos(t + Math.PI) * r, -0.5, Math.sin(t + Math.PI) * r);
 
-  sun.lookAt(0, 0, 0); // point towards the sphere
+  sun.lookAt(vec3.fromValues(0, 0, 0)); // point towards the sphere
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 }

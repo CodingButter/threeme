@@ -23,8 +23,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@acme/threeme": ["../../packages/threeme/index.ts"],
+      "@/*": ["./src/*", "../../packages/threeme/src/*"],
+      "@acme/threeme": ["../../packages/threeme/src/index.ts"],
       "@acme/threeme/*": ["../../packages/threeme/src/*"]
     },
 

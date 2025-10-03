@@ -2,6 +2,8 @@
 // Binds Lambert uniforms including uModel and multiple PointLights (up to 10),
 // with strict TypeScript null/undefined safety.
 
+import type { GLBuffers } from "./types";
+
 export type GLNumArray =
   | Float32Array
   | Int32Array
@@ -10,14 +12,6 @@ export type GLNumArray =
   | Int16Array
   | Uint8Array
   | Int8Array;
-
-export interface GLBuffers {
-  vbo: WebGLBuffer; // positions (vec3)
-  nbo?: WebGLBuffer; // normals (vec3) optional
-  ibo?: WebGLBuffer; // indices optional
-  count: number; // index count OR vertex count
-  indexType?: number; // gl.UNSIGNED_SHORT | gl.UNSIGNED_INT
-}
 
 /* ----------------------------------------------------------------------------
    Shader loading helpers
