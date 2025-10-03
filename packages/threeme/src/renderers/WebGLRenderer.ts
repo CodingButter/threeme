@@ -8,12 +8,11 @@ import { Mesh } from "@/meshes/Mesh";
 import { MeshBasicMaterial } from "@/materials/MeshBasicMaterial";
 import { MeshLambertMaterial } from "@/materials/MeshLambertMaterial";
 
-import { DirectionalLight } from "@/lights/DirectionalLight";
-import { AmbientLight } from "@/lights/AmbientLight";
+import { DirectionalLight, AmbientLight, PointLight } from "@/lights";
 
 import { ProgramCache, type GLBuffers } from "./program";
 import { hexToRgb } from "@/utils/color";
-import type { TypedArray } from "@/core/types";
+import type { Hex, TypedArray } from "@/core/types";
 
 /* ----------------------------------------------
    Public API
@@ -33,7 +32,7 @@ export class WebGLRenderer {
   public readonly canvas: HTMLCanvasElement;
 
   /* Programs */
-  private programs: ProgramCache;
+  public readonly programs: ProgramCache;
 
   /* DPR + size */
   private _dpr = 1;
@@ -46,10 +45,9 @@ export class WebGLRenderer {
   /* Frame temps */
   private _vp = mat4.create();
   private _mvp = mat4.create();
-  private _mv = mat4.create();
   private _normal3 = mat3.create();
+  private _ambientRGB: [number, number, number] = [0, 0, 0];
   private _lightDirW = vec3.create();
-  private _ambientRGB = vec3.create();
 
   constructor(params: RendererParams = {}) {
     const {
@@ -89,48 +87,62 @@ export class WebGLRenderer {
   }
 
   /* ----------------------------------------------
-     Size / clear
+     Canvas & sizing
   ---------------------------------------------- */
 
+  get domElement(): HTMLCanvasElement {
+    return this.canvas;
+  }
+
+  get pixelRatio(): number {
+    return this._dpr;
+  }
+
   setPixelRatio(dpr: number): void {
-    // Cap DPR to avoid huge canvases on 4K/5K when not needed
-    this._dpr = Math.max(0.5, Math.min(3, dpr || 1));
-    // Re-apply size to update the backing store
-    this.setSize(this._width, this._height);
+    // guard and coerce to sensible integer DPR >= 1
+    this._dpr = Math.max(1, Math.floor(dpr || 1));
+    this.setSize(this._width, this._height, false);
   }
 
-  setSize(width: number, height: number): void {
-    this._width = width | 0;
-    this._height = height | 0;
-
-    const rw = Math.max(1, Math.floor(this._width * this._dpr));
-    const rh = Math.max(1, Math.floor(this._height * this._dpr));
-
-    if (this.canvas.width !== rw || this.canvas.height !== rh) {
-      this.canvas.width = rw;
-      this.canvas.height = rh;
-    }
-
-    // CSS size (logical pixels)
-    this.canvas.style.width = `${this._width}px`;
-    this.canvas.style.height = `${this._height}px`;
-
-    this.gl.viewport(0, 0, rw, rh);
-  }
-
-  setClearColor(hex: number, alpha = 1): void {
-    const [r, g, b] = hexToRgb(hex);
+  public setClearColor(color: Hex, alpha = 1): void {
+    const [r, g, b] = hexToRgb(color);
     this.gl.clearColor(r, g, b, alpha);
   }
 
-  beginFrame(): void {
-    const gl = this.gl;
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  getSize(target: { width: number; height: number }): { width: number; height: number } {
+    target.width = this._width;
+    target.height = this._height;
+    return target;
+  }
+
+  setSize(width: number, height: number, updateStyle = true): void {
+    this._width = width | 0 || 0;
+    this._height = height | 0 || 0;
+
+    const canvasWidth = Math.max(1, Math.floor(this._width * this._dpr));
+    const canvasHeight = Math.max(1, Math.floor(this._height * this._dpr));
+
+    if (this.canvas.width !== canvasWidth) this.canvas.width = canvasWidth;
+    if (this.canvas.height !== canvasHeight) this.canvas.height = canvasHeight;
+
+    if (updateStyle) {
+      this.canvas.style.width = `${this._width}px`;
+      this.canvas.style.height = `${this._height}px`;
+    }
+
+    // Update viewport now that size changed
+    this.gl.viewport(0, 0, canvasWidth, canvasHeight);
   }
 
   /* ----------------------------------------------
-     Geometry upload / cache
+     Low-level helpers
   ---------------------------------------------- */
+
+  private beginFrame(): void {
+    const gl = this.gl;
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  }
 
   private ensureGeometry(
     geometry: { positions: TypedArray; indices?: TypedArray; normals?: TypedArray },
@@ -160,31 +172,32 @@ export class WebGLRenderer {
       count = geometry.indices.length;
 
       indexType = geometry.indices instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
-
-      // WebGL1 needs OES_element_index_uint for UNSIGNED_INT
-      const isWebGL2 = (gl as WebGL2RenderingContext).drawBuffers !== undefined;
-      if (indexType === gl.UNSIGNED_INT && !isWebGL2) {
-        const ok = gl.getExtension("OES_element_index_uint");
-        if (!ok) throw new Error("Uint32 indices require OES_element_index_uint in WebGL1.");
-      }
     }
 
-    // Normals → NBO (optional)
+    // Normals (optional) → NBO
     let nbo: WebGLBuffer | undefined;
     if (geometry.normals) {
       nbo = gl.createBuffer() || undefined;
       if (!nbo) throw new Error("Failed to create NBO");
       gl.bindBuffer(gl.ARRAY_BUFFER, nbo);
-      gl.bufferData(gl.ARRAY_BUFFER, geometry.normals as Float32Array, gl.STATIC_DRAW);
+      gl.bufferData(gl.ARRAY_BUFFER, geometry.normals, gl.STATIC_DRAW);
     }
 
-    const rec: GLBuffers = { vbo, ibo, nbo, count, indexType };
-    this.geometryCache.set(key, rec);
-    return rec;
+    const buffers: GLBuffers = { vbo, ibo, nbo, count, indexType };
+    this.geometryCache.set(key, buffers);
+    return buffers;
+  }
+
+  /** Simple DFS traversal */
+  private _traverse(node: any, visit: (o: any) => void): void {
+    visit(node);
+    const kids = (node && node.children) as any[] | undefined;
+    if (!kids) return;
+    for (const child of kids) this._traverse(child, visit);
   }
 
   /* ----------------------------------------------
-     Render
+     Main render
   ---------------------------------------------- */
 
   public render(scene: Scene, camera: Camera): void {
@@ -202,6 +215,7 @@ export class WebGLRenderer {
     // Gather lights once
     let dirLight: DirectionalLight | undefined;
     vec3.set(this._ambientRGB, 0, 0, 0);
+    const pointLights: PointLight[] = [];
 
     this._traverse(scene, (node: any) => {
       if (!dirLight && node instanceof DirectionalLight) dirLight = node;
@@ -211,6 +225,7 @@ export class WebGLRenderer {
         this._ambientRGB[1] += ag * node.intensity;
         this._ambientRGB[2] += ab * node.intensity;
       }
+      if (node instanceof PointLight) pointLights.push(node);
     });
 
     // Clamp ambient
@@ -239,16 +254,64 @@ export class WebGLRenderer {
         const base = hexToRgb(material.color);
         const lcol = hexToRgb(dirLight.color);
 
-        this.programs.lambert.render(buffers, {
+        // Build params object for lambert program
+        const lambertParams: any = {
           mvp: this._mvp as Float32Array,
           normalMatrix3: this._normal3 as unknown as Float32Array,
+          model: obj.worldMatrix as Float32Array, // uModel for vPositionW
           baseColor: [base[0], base[1], base[2]],
           lightDir: [this._lightDirW[0], this._lightDirW[1], this._lightDirW[2]],
           lightColor: [lcol[0], lcol[1], lcol[2]],
           lightIntensity: dirLight.intensity,
           ambient: [this._ambientRGB[0], this._ambientRGB[1], this._ambientRGB[2]],
-          doubleSided: material.doubleSided,
-        });
+          doubleSided: !!material.doubleSided,
+        };
+
+        // ---- Point lights (support up to shader limit, 10) ----
+        const MAX_PL = 10;
+        const count = Math.min(pointLights.length, MAX_PL);
+        lambertParams.pointLightCount = count;
+
+        // Pack an array for ProgramCache to upload: uPointLights[i].*
+        const packed: Array<{
+          color: [number, number, number];
+          positionW: [number, number, number];
+          distance: number;
+          decay: number;
+          intensity: number;
+        }> = [];
+
+        for (let i = 0; i < count; i++) {
+          const L = pointLights[i]!; // safe due to count bound
+
+          // World position
+          const wm = (L as any).worldMatrix as Float32Array | undefined;
+          let posW: [number, number, number] = [0, 0, 0];
+          if (wm && wm.length >= 16) {
+            // translation from column-major mat4
+            posW = [wm[12] ?? 0, wm[13] ?? 0, wm[14] ?? 0];
+          } else if ((L as any).position) {
+            const p = (L as any).position;
+            posW = [p[0] ?? 0, p[1] ?? 0, p[2] ?? 0];
+          }
+
+          // Color (linear 0..1)
+          const cc = hexToRgb(L.color);
+          const color: [number, number, number] = [cc[0], cc[1], cc[2]];
+
+          packed.push({
+            color,
+            positionW: posW,
+            distance: ((L as any).distance as number) ?? 0,
+            decay: ((L as any).decay as number) ?? 2,
+            intensity: L.intensity,
+          });
+        }
+
+        lambertParams.pointLights = packed; // array upload; ProgramCache will loop & bind
+        // --------------------------------------------------------
+
+        this.programs.lambert.render(buffers, lambertParams);
         return;
       }
 
@@ -266,17 +329,5 @@ export class WebGLRenderer {
         doubleSided
       );
     });
-  }
-
-  /* ----------------------------------------------
-     Utils
-  ---------------------------------------------- */
-
-  /** Simple DFS traversal */
-  private _traverse(node: any, visit: (o: any) => void): void {
-    visit(node);
-    const kids = node.children as any[] | undefined;
-    if (!kids) return;
-    for (const child of kids) this._traverse(child, visit);
   }
 }

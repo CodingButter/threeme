@@ -4,6 +4,10 @@ import { Light } from "@/lights/Light";
 const _q = quat.create();
 
 export class DirectionalLight extends Light {
+  readonly type = "DirectionalLight";
+  constructor(color: number, intensity: number) {
+    super(color, intensity);
+  }
   getWorldDirection(out: vec3): vec3 {
     mat4.getRotation(_q, this.worldMatrix);
     const localForwardNegZ = vec3.fromValues(0, 0, -1);

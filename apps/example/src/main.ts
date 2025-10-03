@@ -1,85 +1,99 @@
-import * as THREE from "@acme/threeme";
+// apps/example/src/main.ts
+// Scene: one sphere at the origin, a very dim sun (directional light), and
+// two point lights orbiting around the sphere. Camera looks at the sphere.
 
-// define canvas
-const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
+import {
+  PerspectiveCamera,
+  SphereGeometry,
+  AmbientLight,
+  DirectionalLight,
+  PointLight,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
+  Mesh,
+  WebGLRenderer,
+  Scene,
+} from "@acme/threeme";
+import { vec3 } from "gl-matrix";
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+// ---- setup ---------------------------------------------------------------
+const scene = new Scene();
+
+// Canvas + renderer
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+const renderer = new WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio || 1);
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x223344, 1);
 
-// Scene
-const scene = new THREE.Scene();
+// Camera: a comfortable view
+const camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position = vec3.fromValues(0, 1.5, 3);
+camera.lookAt(vec3.fromValues(0, 0, 0));
+scene.add(camera);
 
-// Camera
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position[2] = 5;
-camera.position[1] = 3; // step back from origin so we can see the triangle
-
-// Lights
-const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-sun.position[1] = 5;
-scene.add(sun);
-// dummy sphere to visualize light position
-const sunSphere = new THREE.Mesh(
-  new THREE.SphereGeometry(0.1, 16, 12),
-  new THREE.MeshBasicMaterial(0xffff00)
-);
-sun.add(sunSphere);
-// ambient light to brighten shadows
-
-const ambient = new THREE.AmbientLight(0xffffff, 0.25); // soft global fill
-scene.add(ambient);
-
-// Mesh
-
-// Cube
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshLambertMaterial(0xff8844)
-);
-cube.position[0] = 1.5;
-cube.position[1] = 0.5;
-scene.add(cube);
-
-// Sphere
-const sphere = new THREE.Mesh(
-  new THREE.SphereGeometry(0.5, 16, 12),
-  new THREE.MeshLambertMaterial(0xffffff)
-);
-sphere.position[0] = -1.5;
-sphere.position[1] = 0.5;
+// ---- geometry & materials -----------------------------------------------
+// Central sphere
+const sphere = new Mesh(new SphereGeometry(0.75, 32, 16), new MeshLambertMaterial(0xaaaaaa));
 scene.add(sphere);
 
-// XZ ground plane, normal +Y
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(5, 5, 1, 1),
-  new THREE.MeshLambertMaterial(0x88aa88, true)
-);
+// Optional: a tiny ground hint (comment out if you don't have PlaneGeometry)
+// import { PlaneGeometry } from "@/geometry/PlaneGeometry";
+// const ground = new Mesh(new PlaneGeometry(6, 6, 1, 1), new MeshLambertMaterial(0x333333));
+// ground.rotation.x = -Math.PI / 2;
+// ground.position.y = -0.76;
+// scene.add(ground);
 
-ground.position[1] = 0; // sit at y = 0 (optional)
-ground.rotateX(Math.PI / 2); // rotate to lie in XZ plane
-scene.add(ground);
+// ---- lighting ------------------------------------------------------------
+// Ambient (soft fill)
+scene.add(new AmbientLight(0xff0000, 0.14));
 
+// Sun: a dim directional light high in the sky
+const sun = new DirectionalLight(0x00ff00, 1);
+sun.position = vec3.fromValues(0, 0, 0);
+scene.add(sun);
+
+// Two point lights orbiting the sphere
+const lampA = new PointLight(0xff6666, 1.5, /*distance*/ 4.0, /*decay*/ 2.0);
+const lampB = new PointLight(0x6699ff, 1.5, /*distance*/ 4.0, /*decay*/ 2.0);
+scene.add(lampA);
+scene.add(lampB);
+
+// Small visible bulbs so you can see where the point lights are
+const bulbMatA = new MeshBasicMaterial(0xff6666);
+const bulbMatB = new MeshBasicMaterial(0x6699ff);
+const bulbGeo = new SphereGeometry(0.05, 8, 8);
+const bulbA = new Mesh(bulbGeo, bulbMatA);
+const bulbB = new Mesh(bulbGeo, bulbMatB);
+lampA.add(bulbA);
+lampB.add(bulbB);
+
+// ---- animation loop ------------------------------------------------------
 let t = 0;
-const r = 10; // radius
-function frame() {
-  t += 0.016; // ~60 FPS
-  sun.position[0] = Math.cos(t) * r;
-  sun.position[2] = Math.sin(t) * r;
-  sun.lookAt([0, 0, 0]);
+let prev = performance.now();
 
-  camera.lookAt([0, 0, 0]);
-  // Or, if you want the camera to always point at the sun:
-  //camera.lookAt(sun.position, [0, 1, 0]);
+function tick(now: number) {
+  const dt = (now - prev) * 0.001;
+  prev = now;
+  t += dt;
+
+  // Orbit the two lamps on opposite sides of the sphere
+  const r = 1.5;
+  lampA.position = vec3.fromValues(Math.cos(t) * r, 0.5, Math.sin(t) * r);
+  lampB.position = vec3.fromValues(Math.cos(t + Math.PI) * r, -0.5, Math.sin(t + Math.PI) * r);
+
+  sun.lookAt(0, 0, 0); // point towards the sphere
   renderer.render(scene, camera);
-  requestAnimationFrame(frame);
+  requestAnimationFrame(tick);
 }
-requestAnimationFrame(frame);
 
-// Resize
+requestAnimationFrame(tick);
+
+// ---- resize handling -----------------------------------------------------
 window.addEventListener("resize", () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.setAspect(window.innerWidth / window.innerHeight);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h);
+  if ((camera as any).setAspect) (camera as any).setAspect(w / h);
+  (camera as any).aspect = w / h; // in case your camera stores aspect directly
 });
