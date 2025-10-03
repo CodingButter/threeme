@@ -1,0 +1,22 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["../../packages/threeme/src/index.ts"],
+  "out": "dist",
+  "name": "ThreeMe Documentation",
+  "includeVersion": true,
+  "readme": "../../packages/threeme/README.md",
+  "plugin": ["@typhonjs-typedoc/typedoc-theme-dmt"],
+  "theme": "default-modern",
+  "navigation": {
+    "includeCategories": true,
+    "includeFolders": true
+  },
+  "categorizeByGroup": true,
+  "sort": ["kind", "alphabetical"],
+  "exclude": ["**/node_modules/**", "**/*.test.ts", "**/*.spec.ts"],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "gitRevision": "main",
+  "customCss": "./custom.css"
+}

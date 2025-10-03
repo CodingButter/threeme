@@ -1,0 +1,19 @@
+:root {
+  --color-accent: #00d8ff;
+  --color-accent-2: #0066cc;
+}
+
+.tsd-page-title h1 {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tsd-signature-type {
+  color: var(--color-accent-2);
+}
+
+code {
+  border-radius: 4px;
+}

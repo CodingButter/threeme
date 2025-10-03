@@ -1,0 +1,22 @@
+{
+  "name": "@acme/docs",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "typedoc",
+    "dev": "bun run build && bun run serve",
+    "serve": "bun run --hot ./index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@typhonjs-typedoc/typedoc-theme-dmt": "^0.3.1",
+    "typedoc": "^0.28.13"
+  },
+  "dependencies": {
+    "@acme/threeme": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
