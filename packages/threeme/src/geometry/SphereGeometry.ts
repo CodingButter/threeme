@@ -19,6 +19,7 @@ export class SphereGeometry extends BufferGeometry {
 
     const positions = new Float32Array(vertexCount * 3);
     const normals = new Float32Array(vertexCount * 3);
+    const uvs = new Float32Array(vertexCount * 2);
 
     // choose index type based on vertex count
     const indexCount = ws * hs * 6; // 2 tris per quad, 3 indices each
@@ -28,6 +29,7 @@ export class SphereGeometry extends BufferGeometry {
     // ---- fill positions + normals ----
     // iy: 0..hs (south → north), ix: 0..ws (0..2π)
     let p = 0;
+    let uvIndex = 0;
     for (let iy = 0; iy < vertsY; iy++) {
       const v = iy / hs; // 0..1
       const phi = v * Math.PI; // 0..π (lat)
@@ -52,6 +54,10 @@ export class SphereGeometry extends BufferGeometry {
         normals[p++] = ny;
         positions[p] = radius * nz;
         normals[p++] = nz;
+
+        // UVs
+        uvs[uvIndex++] = u;
+        uvs[uvIndex++] = 1 - v; // v flipped
       }
     }
 
@@ -76,6 +82,6 @@ export class SphereGeometry extends BufferGeometry {
       }
     }
 
-    super(positions, indices, normals);
+    super(positions, indices, normals, uvs);
   }
 }

@@ -6,6 +6,6 @@
   }
 
   body {
-    @apply grid place-items-center min-w-[320px] min-h-screen relative m-0;
+    @apply flex justify-center items-center min-w-[320px] min-h-screen relative m-0 p-0;
   }
 }

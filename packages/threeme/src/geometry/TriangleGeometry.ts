@@ -19,8 +19,17 @@ export class TriangleGeometry extends BufferGeometry {
     // Flat normals pointing +Z (out of the screen)
     const normals = new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]);
 
+    const uvs = new Float32Array([
+      0,
+      0, // vertex 0
+      1,
+      0, // vertex 1
+      0.5,
+      1, // vertex 2
+    ]);
+
     const indices = new Uint16Array([0, 1, 2]);
 
-    super(positions, indices, normals);
+    super(positions, indices, normals, uvs);
   }
 }

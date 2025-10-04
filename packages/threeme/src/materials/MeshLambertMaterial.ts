@@ -1,11 +1,8 @@
 import type { Hex } from "@/core";
-import { Material } from "./Material";
+import { Material, type IMaterialProps } from "./Material";
 
 export class MeshLambertMaterial extends Material {
-  constructor(
-    public color: Hex = 0xffffff,
-    doubleSided = false
-  ) {
-    super(doubleSided);
+  constructor(props: IMaterialProps) {
+    super(props);
   }
 }

@@ -35,3 +35,19 @@ declare module "*.css" {
   const path: `${string}.css`;
   export = path;
 }
+
+declare module "*.png" {
+  /**
+   * A path to the PNG file
+   */
+  const path: `${string}.png`;
+  export = path;
+}
+
+declare module "*.jpg" {
+  /**
+   * A path to the JPG file
+   */
+  const path: `${string}.jpg`;
+  export = path;
+}

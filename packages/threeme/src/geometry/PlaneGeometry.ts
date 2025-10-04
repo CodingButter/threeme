@@ -23,6 +23,7 @@ export class PlaneGeometry extends BufferGeometry {
     const indexCount = ws * hs * 6; // 2 tris per quad
     const IndexCtor = vertexCount > 65_535 ? Uint32Array : Uint16Array;
     const indices = new IndexCtor(indexCount);
+    const uvs = new Float32Array(vertexCount * 2);
 
     // half-dimensions for centering
     const hx = width * 0.5;
@@ -30,6 +31,7 @@ export class PlaneGeometry extends BufferGeometry {
 
     // fill positions/normals
     let p = 0;
+    let uvIndex = 0;
     for (let iy = 0; iy < vertsY; iy++) {
       const vy = iy / hs; // 0..1
       const y = -hy + vy * height; // -hy .. +hy
@@ -43,6 +45,10 @@ export class PlaneGeometry extends BufferGeometry {
         normals[p++] = 0;
         positions[p] = 0;
         normals[p++] = 1; // +Z normal
+
+        // UVs
+        uvs[uvIndex++] = vx;
+        uvs[uvIndex++] = 1 - vy; // flip V to have (0,0) at bottom left
       }
     }
 
@@ -64,6 +70,6 @@ export class PlaneGeometry extends BufferGeometry {
       }
     }
 
-    super(positions, indices, normals);
+    super(positions, indices, normals, uvs);
   }
 }

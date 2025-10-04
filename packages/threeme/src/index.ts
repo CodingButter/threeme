@@ -8,3 +8,5 @@ export * from "./meshes";
 export * from "./renderers";
 export * from "./utils";
 export * from "./lights";
+export * from "./textures";
+export * from "./loaders";

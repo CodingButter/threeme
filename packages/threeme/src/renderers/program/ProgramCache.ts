@@ -17,14 +17,33 @@ export type GLNumArray =
    Shader loading helpers
    (Adjust these to match your build system if needed)
 ---------------------------------------------------------------------------- */
-// @ts-ignore - adjust to your build setup (e.g. '?raw' loaders)
 import lambertVertSrc from "@/shaders/lambert.vert" with { type: "text" };
-// @ts-ignore
 import lambertFragSrc from "@/shaders/lambert.frag" with { type: "text" };
-// @ts-ignore
 import basicVertSrc from "@/shaders/basic.vert" with { type: "text" };
-// @ts-ignore
 import basicFragSrc from "@/shaders/basic.frag" with { type: "text" };
+import type { Rgb } from "@/core";
+
+export type LambertParams = {
+  mvp: Float32Array;
+  normalMatrix3: Float32Array;
+  model: Float32Array;
+  baseColor: Rgb;
+  lightDir: Rgb;
+  lightColor: Rgb;
+  lightIntensity: number;
+  ambient: Rgb;
+  doubleSided: boolean;
+  texture?: WebGLTexture;
+
+  pointLightCount?: number;
+  pointLights?: Array<{
+    color: Rgb;
+    positionW: [number, number, number];
+    distance: number;
+    decay: number;
+    intensity: number;
+  }>;
+};
 
 function compile(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -92,7 +111,7 @@ function set1f(
 function set3f(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
   loc: WebGLUniformLocation | null,
-  v: [number, number, number]
+  v: Rgb
 ) {
   if (loc) (gl as any).uniform3f(loc, v[0], v[1], v[2]);
 }
@@ -144,6 +163,11 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
   const uNormalMatrix = gl.getUniformLocation(program, "uNormalMatrix");
   const uModel = gl.getUniformLocation(program, "uModel");
 
+  // uvs
+  const uUseMap = gl.getUniformLocation(program, "uUseMap");
+  const uMap = gl.getUniformLocation(program, "uMap");
+  const aUV = gl.getAttribLocation(program, "aUV");
+
   const uBaseColor = gl.getUniformLocation(program, "uBaseColor");
   const uLightDir = gl.getUniformLocation(program, "uLightDir");
   const uLightColor = gl.getUniformLocation(program, "uLightColor");
@@ -179,6 +203,17 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
       gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 3 * 4, 0);
     }
 
+    // UVs
+    if (buffers.uvbo) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.uvbo);
+      if (aUV >= 0) {
+        gl.enableVertexAttribArray(aUV);
+        gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 2 * 4, 0);
+      }
+    } else if (aUV >= 0) {
+      gl.disableVertexAttribArray(aUV);
+    }
+
     // normals (optional)
     if (buffers.nbo) {
       gl.bindBuffer(gl.ARRAY_BUFFER, buffers.nbo);
@@ -194,27 +229,6 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
     if (buffers.ibo) gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.ibo);
   }
 
-  type LambertParams = {
-    mvp: Float32Array;
-    normalMatrix3: Float32Array;
-    model: Float32Array;
-    baseColor: [number, number, number];
-    lightDir: [number, number, number];
-    lightColor: [number, number, number];
-    lightIntensity: number;
-    ambient: [number, number, number];
-    doubleSided: boolean;
-
-    pointLightCount?: number;
-    pointLights?: Array<{
-      color: [number, number, number];
-      positionW: [number, number, number];
-      distance: number;
-      decay: number;
-      intensity: number;
-    }>;
-  };
-
   function render(buffers: GLBuffers, opts: LambertParams) {
     bindBuffers(buffers);
 
@@ -228,6 +242,15 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
     set1f(gl, uLightIntensity, opts.lightIntensity);
     set3f(gl, uAmbient, opts.ambient);
     setBool(gl, uDoubleSided, !!opts.doubleSided);
+
+    if (opts.texture && uMap) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, opts.texture);
+      set1i(gl, uMap, 0);
+      setBool(gl, uUseMap, true);
+    } else {
+      setBool(gl, uUseMap, false);
+    }
 
     // point lights
     const count = Math.min(opts.pointLightCount || 0, MAX_PL);
@@ -268,6 +291,9 @@ function buildBasic(gl: WebGLRenderingContext | WebGL2RenderingContext) {
   const uMVP = gl.getUniformLocation(program, "uMVP");
   const uColor = gl.getUniformLocation(program, "uColor");
   const uDoubleSided = gl.getUniformLocation(program, "uDoubleSided");
+  const uUseMap = gl.getUniformLocation(program, "uUseMap");
+  const uMap = gl.getUniformLocation(program, "uMap");
+  const aUV = gl.getAttribLocation(program, "aUV");
 
   function bindBuffers(buffers: GLBuffers) {
     gl.useProgram(program);
@@ -278,6 +304,17 @@ function buildBasic(gl: WebGLRenderingContext | WebGL2RenderingContext) {
       gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 3 * 4, 0);
     }
 
+    // UVs
+    if (buffers.uvbo) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.uvbo);
+      if (aUV >= 0) {
+        gl.enableVertexAttribArray(aUV);
+        gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 2 * 4, 0);
+      }
+    } else if (aUV >= 0) {
+      gl.disableVertexAttribArray(aUV);
+    }
+
     if (buffers.ibo) gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.ibo);
   }
 
@@ -285,12 +322,22 @@ function buildBasic(gl: WebGLRenderingContext | WebGL2RenderingContext) {
     buffers: GLBuffers,
     mvp: Float32Array,
     color: [number, number, number],
-    doubleSided: boolean
+    doubleSided: boolean,
+    texture?: WebGLTexture
   ) {
     bindBuffers(buffers);
     setMat4(gl, uMVP, mvp);
     set3f(gl, uColor, color);
     setBool(gl, uDoubleSided, !!doubleSided);
+
+    if (texture && uMap) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      set1i(gl, uMap, 0);
+      setBool(gl, uUseMap, true);
+    } else {
+      setBool(gl, uUseMap, false);
+    }
 
     if (buffers.ibo && buffers.indexType) {
       gl.drawElements(gl.TRIANGLES, buffers.count, buffers.indexType, 0);

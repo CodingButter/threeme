@@ -2,13 +2,15 @@ precision mediump float;
 
 varying vec3 vNormalW;
 varying vec3 vPositionW; // world-space position from vertex shader
+varying vec2 vUV;
 
 uniform vec3 uBaseColor;
 uniform vec3 uLightDir;        // light → surface (ray dir)
 uniform vec3 uLightColor;
 uniform float uLightIntensity;
 uniform vec3 uAmbient;
-uniform bool uDoubleSided;     // ✅ required
+uniform bool uUseMap;
+uniform sampler2D uMap;
 
 // ---- Point Light Support ----
 #ifndef MAX_POINT_LIGHTS
@@ -48,22 +50,28 @@ vec3 computePointLight(PointLight light, vec3 normal, vec3 posW, vec3 baseColor)
 }
 
 void main() {
-  vec3 N = -normalize(vNormalW);
+  vec3 N = normalize(vNormalW);
+
+  vec3 baseColor = uBaseColor;
+  if(uUseMap) {
+    vec4 texColor = texture2D(uMap, vUV);
+    baseColor *= texColor.rgb;
+  }
 
   // Directional diffuse
   float NdotL = max(dot(N, -normalize(uLightDir)), 0.0); // uLightDir is light→surface
-  vec3 diffuse = uBaseColor * uLightColor * (uLightIntensity * NdotL);
+  vec3 diffuse = baseColor * uLightColor * (uLightIntensity * NdotL);
 
   // Accumulate point lights
   vec3 plColor = vec3(0.0);
   for(int i = 0; i < MAX_POINT_LIGHTS; i++) {
     if(i >= uPointLightCount)
       break; // respects runtime count
-    plColor += computePointLight(uPointLights[i], N, vPositionW, uBaseColor);
+    plColor += computePointLight(uPointLights[i], N, vPositionW, baseColor);
   }
 
   // Final
-  vec3 color = uAmbient * uBaseColor + diffuse + plColor;
+  vec3 color = uAmbient * baseColor + diffuse + plColor;
   color = clamp(color, 0.0, 1.0); // temporary safety; swap for tone mapping later
   gl_FragColor = vec4(color, 1.0);
 }

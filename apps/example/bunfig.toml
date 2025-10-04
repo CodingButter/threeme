@@ -2,6 +2,7 @@
 ".vert" = "text"
 ".frag" = "text"
 ".glsl" = "text"
+".png" =  "path"
 
 [serve.static]
 plugins = ["bun-plugin-tailwind"]

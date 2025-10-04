@@ -10,9 +10,11 @@ import { MeshLambertMaterial } from "@/materials/MeshLambertMaterial";
 
 import { DirectionalLight, AmbientLight, PointLight } from "@/lights";
 
-import { ProgramCache, type GLBuffers } from "./program";
+import { ProgramCache, type GLBuffers, type LambertParams } from "./program";
 import { hexToRgb } from "@/utils/color";
 import type { Hex, TypedArray } from "@/core/types";
+import type { Texture } from "@/textures";
+import { isPowerOfTwo } from "@/utils";
 
 /* ----------------------------------------------
    Public API
@@ -41,6 +43,8 @@ export class WebGLRenderer {
 
   /* Geometry cache */
   private geometryCache: WeakMap<object, GLBuffers> = new WeakMap();
+  /* Texture cache */
+  private textureCache: WeakMap<Texture, WebGLTexture> = new WeakMap();
 
   /* Frame temps */
   private _vp = mat4.create();
@@ -144,8 +148,70 @@ export class WebGLRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   }
 
+  private ensureTexture(texture: Texture): WebGLTexture | undefined {
+    let glTexture = this.textureCache.get(texture);
+
+    if (!glTexture) {
+      glTexture = this.gl.createTexture();
+      if (!glTexture) {
+        console.error("Failed to create texture");
+        return undefined;
+      }
+      this.textureCache.set(texture, glTexture);
+    }
+
+    if (texture.needsUpdate) {
+      const gl = this.gl;
+      this.gl.bindTexture(this.gl.TEXTURE_2D, glTexture);
+
+      const target: number = texture.target || gl.TEXTURE_2D;
+      const level: number = texture.level || 0;
+      const internalFormat: number = texture.internalFormat || gl.RGBA;
+      const width: number = texture.width || 1;
+      const height: number = texture.height || 1;
+      const border: number = texture.border || 0;
+      const sourceFormat: number = texture.sourceFormat || gl.RGBA;
+      const sourceType: number = texture.sourceType || gl.UNSIGNED_BYTE;
+      const source: any = texture.source || new Uint8Array([0, 0, 255, 255]); // default blue
+      const wrapS: number = texture.wrapS || gl.CLAMP_TO_EDGE;
+      const wrapT: number = texture.wrapT || gl.CLAMP_TO_EDGE;
+      const minFilter: number = texture.minFilter || gl.LINEAR;
+      const magFilter: number = texture.magFilter || gl.LINEAR;
+
+      this.gl.texImage2D(
+        target,
+        level,
+        internalFormat,
+        width,
+        height,
+        border,
+        sourceFormat,
+        sourceType,
+        source
+      );
+
+      // Set texture
+      this.gl.texParameteri(target, gl.TEXTURE_WRAP_S, wrapS);
+      this.gl.texParameteri(target, gl.TEXTURE_WRAP_T, wrapT);
+      this.gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, minFilter);
+      this.gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, magFilter);
+
+      // Generate mipmaps if needed
+      if (isPowerOfTwo(width) && isPowerOfTwo(height)) {
+        gl.generateMipmap(target);
+      }
+      texture.needsUpdate = false;
+    }
+    return glTexture;
+  }
+
   private ensureGeometry(
-    geometry: { positions: TypedArray; indices?: TypedArray; normals?: TypedArray },
+    geometry: {
+      positions: TypedArray;
+      indices?: TypedArray;
+      normals?: TypedArray;
+      uvs?: TypedArray;
+    },
     key: object = geometry
   ): GLBuffers {
     const hit = this.geometryCache.get(key);
@@ -183,7 +249,16 @@ export class WebGLRenderer {
       gl.bufferData(gl.ARRAY_BUFFER, geometry.normals, gl.STATIC_DRAW);
     }
 
-    const buffers: GLBuffers = { vbo, ibo, nbo, count, indexType };
+    // UVs (optional) → UVBO
+    let uvbo: WebGLBuffer | undefined;
+    if (geometry.uvs) {
+      uvbo = gl.createBuffer() || undefined;
+      if (!uvbo) throw new Error("Failed to create UVBO");
+      gl.bindBuffer(gl.ARRAY_BUFFER, uvbo);
+      gl.bufferData(gl.ARRAY_BUFFER, geometry.uvs, gl.STATIC_DRAW);
+    }
+
+    const buffers: GLBuffers = { vbo, ibo, nbo, uvbo, count, indexType };
     this.geometryCache.set(key, buffers);
     return buffers;
   }
@@ -255,7 +330,7 @@ export class WebGLRenderer {
         const lcol = hexToRgb(dirLight.color);
 
         // Build params object for lambert program
-        const lambertParams: any = {
+        const lambertParams: LambertParams = {
           mvp: this._mvp as Float32Array,
           normalMatrix3: this._normal3 as unknown as Float32Array,
           model: obj.worldMatrix as Float32Array, // uModel for vPositionW
@@ -266,6 +341,12 @@ export class WebGLRenderer {
           ambient: [this._ambientRGB[0], this._ambientRGB[1], this._ambientRGB[2]],
           doubleSided: !!material.doubleSided,
         };
+
+        // Add Texture if available
+        if (material.map != undefined) {
+          const glTexture = this.ensureTexture(material.map);
+          if (glTexture) lambertParams.texture = glTexture;
+        }
 
         // ---- Point lights (support up to shader limit, 10) ----
         const MAX_PL = 10;
@@ -322,11 +403,18 @@ export class WebGLRenderer {
           : ([1, 1, 1] as [number, number, number]);
       const doubleSided = material instanceof MeshBasicMaterial && !!material.doubleSided;
 
+      // Get texture if material has map
+      let glTexture: WebGLTexture | undefined;
+      if (material instanceof MeshBasicMaterial && material.map != undefined) {
+        glTexture = this.ensureTexture(material.map);
+      }
+
       this.programs.basic.render(
         buffers,
         this._mvp as Float32Array,
         [color[0], color[1], color[2]],
-        doubleSided
+        doubleSided,
+        glTexture
       );
     });
   }
