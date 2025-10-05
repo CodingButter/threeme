@@ -29,7 +29,7 @@ const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
 document.body.appendChild(canvas);
 const renderer = new WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio || 1);
-renderer.setClearColor(0xcccccc);
+renderer.setClearColor(0x888888);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 // Camera: a comfortable view
