@@ -91,6 +91,9 @@ export class WebGLRenderer {
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     gl.clearDepth(1.0);
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.frontFace(gl.CCW);
 
     // Programs
     this.programs = new ProgramCache(gl);
@@ -385,9 +388,16 @@ export class WebGLRenderer {
     dirLight: DirectionalLight | undefined,
     pointLights: PointLight[]
   ): void {
-
+      const gl = this.gl;
       const buffers = this.ensureGeometry(obj.geometry);
       const material = obj.material as any;
+
+      // Handle face culling based on doubleSided property
+      if (material && material.doubleSided) {
+        gl.disable(gl.CULL_FACE);
+      } else {
+        gl.enable(gl.CULL_FACE);
+      }
 
       // MVP = VP * Model
       mat4.multiply(this._mvp, this._vp, obj.worldMatrix);

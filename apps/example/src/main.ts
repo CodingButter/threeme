@@ -43,13 +43,14 @@ scene.add(camera);
 const cubeGeo = new BoxGeometry(1, 1, 1);
 const texture = TextureLoader.load(alphacube);
 
-const sphereMat = new MeshLambertMaterial({
+const cubeMat = new MeshLambertMaterial({
   color: 0xffffff,
   map: texture,
-  transparent: true
+  doubleSided: false,
+  transparent: true,
 });
-const sphere = new Mesh(cubeGeo, sphereMat);
-scene.add(sphere);
+const cube = new Mesh(cubeGeo, cubeMat);
+scene.add(cube);
 
 // ---- lighting ------------------------------------------------------------
 // Ambient (soft fill)
@@ -94,9 +95,9 @@ function tick(now: number) {
   t += dt;
 
   // Orbit the two lamps on opposite sides of the sphere
-  sphere.rotateX(0.5 * dt);
-  sphere.rotateY(0.2 * dt);
-  sphere.rotateZ(0.3 * dt);
+  cube.rotateX(0.5 * dt);
+  cube.rotateY(0.2 * dt);
+  cube.rotateZ(0.3 * dt);
   pointLightContainer.setRotationEulerXYZ(Math.cos(-t), Math.sin(t), Math.sin(-t));
   sun.position[0] = Math.cos(t * 0.8) * sunRadius;
   sun.position[2] = Math.sin(t * 0.8) * sunRadius;
