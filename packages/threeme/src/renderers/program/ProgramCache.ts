@@ -36,6 +36,8 @@ export type LambertParams = {
   ambient: Rgb;
   doubleSided: boolean;
   texture?: WebGLTexture;
+  opacity?: number;
+  alphaTest?: number;
 
   pointLightCount?: number;
   pointLights?: Array<{
@@ -176,6 +178,8 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
   const uLightIntensity = gl.getUniformLocation(program, "uLightIntensity");
   const uAmbient = gl.getUniformLocation(program, "uAmbient");
   const uDoubleSided = gl.getUniformLocation(program, "uDoubleSided");
+  const uOpacity = gl.getUniformLocation(program, "uOpacity");
+  const uAlphaTest = gl.getUniformLocation(program, "uAlphaTest");
 
   const uPointLightCount = gl.getUniformLocation(program, "uPointLightCount");
 
@@ -244,6 +248,8 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
     set1f(gl, uLightIntensity, opts.lightIntensity);
     set3f(gl, uAmbient, opts.ambient);
     setBool(gl, uDoubleSided, !!opts.doubleSided);
+    set1f(gl, uOpacity, opts.opacity !== undefined ? opts.opacity : 1.0);
+    set1f(gl, uAlphaTest, opts.alphaTest !== undefined ? opts.alphaTest : 0.0);
 
     if (opts.texture && uMap) {
       gl.activeTexture(gl.TEXTURE0);
@@ -295,6 +301,8 @@ function buildBasic(gl: WebGLRenderingContext | WebGL2RenderingContext) {
   const uDoubleSided = gl.getUniformLocation(program, "uDoubleSided");
   const uUseMap = gl.getUniformLocation(program, "uUseMap");
   const uMap = gl.getUniformLocation(program, "uMap");
+  const uOpacity = gl.getUniformLocation(program, "uOpacity");
+  const uAlphaTest = gl.getUniformLocation(program, "uAlphaTest");
   const aUV = gl.getAttribLocation(program, "aUV");
 
   function bindBuffers(buffers: GLBuffers) {
@@ -325,12 +333,16 @@ function buildBasic(gl: WebGLRenderingContext | WebGL2RenderingContext) {
     mvp: Float32Array,
     color: [number, number, number],
     doubleSided: boolean,
-    texture?: WebGLTexture
+    texture?: WebGLTexture,
+    opacity = 1.0,
+    alphaTest = 0.0
   ) {
     bindBuffers(buffers);
     setMat4(gl, uMVP, mvp);
     set3f(gl, uColor, color);
     setBool(gl, uDoubleSided, !!doubleSided);
+    set1f(gl, uOpacity, opacity);
+    set1f(gl, uAlphaTest, alphaTest);
 
     if (texture && uMap) {
       gl.activeTexture(gl.TEXTURE0);

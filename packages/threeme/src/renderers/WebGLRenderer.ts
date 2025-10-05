@@ -308,9 +308,73 @@ export class WebGLRenderer {
     this._ambientRGB[1] = Math.min(1, this._ambientRGB[1]);
     this._ambientRGB[2] = Math.min(1, this._ambientRGB[2]);
 
-    // Draw meshes
+    // Collect meshes and separate by transparency
+    const opaqueMeshes: Mesh[] = [];
+    const transparentMeshes: Mesh[] = [];
+
     this._traverse(scene, (obj: any) => {
       if (!(obj instanceof Mesh)) return;
+      const material = obj.material as any;
+      const isTransparent =
+        material &&
+        (material.transparent ||
+          (material.opacity !== undefined && material.opacity < 1.0) ||
+          (material.alphaTest !== undefined && material.alphaTest > 0.0));
+
+      if (isTransparent) {
+        transparentMeshes.push(obj);
+      } else {
+        opaqueMeshes.push(obj);
+      }
+    });
+
+    // Sort transparent meshes back-to-front (by distance from camera)
+    if (transparentMeshes.length > 0) {
+      const camPos = vec3.fromValues(
+        camera.worldMatrix[12],
+        camera.worldMatrix[13],
+        camera.worldMatrix[14]
+      );
+      transparentMeshes.sort((a, b) => {
+        const distA = vec3.distance(
+          camPos,
+          vec3.fromValues(a.worldMatrix[12], a.worldMatrix[13], a.worldMatrix[14])
+        );
+        const distB = vec3.distance(
+          camPos,
+          vec3.fromValues(b.worldMatrix[12], b.worldMatrix[13], b.worldMatrix[14])
+        );
+        return distB - distA; // back-to-front
+      });
+    }
+
+    // Render opaque meshes first
+    for (const obj of opaqueMeshes) {
+      this._renderMesh(obj, dirLight, pointLights);
+    }
+
+    // Render transparent meshes with blending
+    if (transparentMeshes.length > 0) {
+      const gl = this.gl;
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false); // Don't write to depth buffer
+
+      for (const obj of transparentMeshes) {
+        this._renderMesh(obj, dirLight, pointLights);
+      }
+
+      // Restore state
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+    }
+  }
+
+  private _renderMesh(
+    obj: Mesh,
+    dirLight: DirectionalLight | undefined,
+    pointLights: PointLight[]
+  ): void {
 
       const buffers = this.ensureGeometry(obj.geometry);
       const material = obj.material as any;
@@ -340,6 +404,8 @@ export class WebGLRenderer {
           lightIntensity: dirLight.intensity,
           ambient: [this._ambientRGB[0], this._ambientRGB[1], this._ambientRGB[2]],
           doubleSided: !!material.doubleSided,
+          opacity: material.opacity,
+          alphaTest: material.alphaTest,
         };
 
         // Add Texture if available
@@ -409,13 +475,18 @@ export class WebGLRenderer {
         glTexture = this.ensureTexture(material.map);
       }
 
+      // Get transparency properties
+      const opacity = material instanceof MeshBasicMaterial ? material.opacity : 1.0;
+      const alphaTest = material instanceof MeshBasicMaterial ? material.alphaTest : 0.0;
+
       this.programs.basic.render(
         buffers,
         this._mvp as Float32Array,
         [color[0], color[1], color[2]],
         doubleSided,
-        glTexture
+        glTexture,
+        opacity,
+        alphaTest
       );
-    });
   }
 }

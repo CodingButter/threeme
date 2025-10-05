@@ -11,6 +11,8 @@ uniform float uLightIntensity;
 uniform vec3 uAmbient;
 uniform bool uUseMap;
 uniform sampler2D uMap;
+uniform float uOpacity;
+uniform float uAlphaTest;
 
 // ---- Point Light Support ----
 #ifndef MAX_POINT_LIGHTS
@@ -53,9 +55,17 @@ void main() {
   vec3 N = normalize(vNormalW);
 
   vec3 baseColor = uBaseColor;
+  float alpha = uOpacity;
+
   if(uUseMap) {
     vec4 texColor = texture2D(uMap, vUV);
     baseColor *= texColor.rgb;
+    alpha *= texColor.a;
+  }
+
+  // Alpha test: discard fragments below threshold
+  if(uAlphaTest > 0.0 && alpha < uAlphaTest) {
+    discard;
   }
 
   // Directional diffuse
@@ -73,5 +83,5 @@ void main() {
   // Final
   vec3 color = uAmbient * baseColor + diffuse + plColor;
   color = clamp(color, 0.0, 1.0); // temporary safety; swap for tone mapping later
-  gl_FragColor = vec4(color, 1.0);
+  gl_FragColor = vec4(color, alpha);
 }
