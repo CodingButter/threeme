@@ -20,7 +20,7 @@ import {
 import { vec2, vec3 } from "gl-matrix";
 
 import asmongold from "@/assets/asmongold.jpg";
-console.log("asmongold:", asmongold);
+
 // ---- setup ---------------------------------------------------------------
 const scene = new Scene();
 
@@ -41,6 +41,7 @@ scene.add(camera);
 // Central sphere
 const cubeGeo = new BoxGeometry(1, 1, 1);
 const texture = TextureLoader.load(asmongold);
+
 const sphereMat = new MeshLambertMaterial({ color: 0xffffff, map: texture });
 const sphere = new Mesh(cubeGeo, sphereMat);
 scene.add(sphere);

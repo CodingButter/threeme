@@ -25,11 +25,12 @@ export class ShaderLoader extends Loader {
   public static load(
     url: string,
     type: "vertex" | "fragment",
-    onProgress: onProgressCallback
+    onProgress?: onProgressCallback
   ): Shaders {
     const shaderLoader = new ShaderLoader(url, type);
     return shaderLoader.load(
       url,
+      type,
       () => {},
       onProgress,
       () => {}
@@ -37,12 +38,14 @@ export class ShaderLoader extends Loader {
   }
 
   public override load(
-    url: string,
-    onLoad: onLoadCallback,
-    onProgress: onProgressCallback,
-    onError: onErrorCallback
+    url?: string,
+    type?: "vertex" | "fragment",
+    onLoad?: onLoadCallback,
+    onProgress?: onProgressCallback,
+    onError?: onErrorCallback
   ): Shaders {
     url = url || this.url;
+    type = type || this.shader.type;
     const loader = new DataLoader();
     loader.load(
       url,
