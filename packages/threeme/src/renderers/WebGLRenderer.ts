@@ -30,7 +30,7 @@ export interface RendererParams {
 
 export class WebGLRenderer {
   /* GL + canvas */
-  public readonly gl: WebGLRenderingContext | WebGL2RenderingContext;
+  public readonly gl: WebGL2RenderingContext | WebGLRenderingContext;
   public readonly canvas: HTMLCanvasElement;
 
   /* Programs */

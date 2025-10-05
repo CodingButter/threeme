@@ -1,4 +1,4 @@
 export { Material } from "./Material";
 export { MeshBasicMaterial } from "./MeshBasicMaterial";
-export { ShaderMaterial } from "./ShaderMaterial";
+export { MeshShaderMaterial } from "./MeshShaderMaterial";
 export { MeshLambertMaterial } from "./MeshLambertMaterial";

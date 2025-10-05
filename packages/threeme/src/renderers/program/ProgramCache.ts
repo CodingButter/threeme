@@ -17,10 +17,12 @@ export type GLNumArray =
    Shader loading helpers
    (Adjust these to match your build system if needed)
 ---------------------------------------------------------------------------- */
-import lambertVertSrc from "@/shaders/lambert.vert" with { type: "text" };
-import lambertFragSrc from "@/shaders/lambert.frag" with { type: "text" };
-import basicVertSrc from "@/shaders/basic.vert" with { type: "text" };
-import basicFragSrc from "@/shaders/basic.frag" with { type: "text" };
+import {
+  DEFAULT_BASIC_FRAGMENT_SHADER,
+  DEFAULT_BASIC_VERTEX_SHADER,
+  DEFAULT_LAMBERT_FRAGMENT_SHADER,
+  DEFAULT_LAMBERT_VERTEX_SHADER,
+} from "@/core";
 import type { Rgb } from "@/core";
 
 export type LambertParams = {
@@ -152,7 +154,7 @@ export class ProgramCache {
    Lambert program (Lambert + Ambient + Directional + PointLights[0..9])
 ---------------------------------------------------------------------------- */
 function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
-  const program = link(gl, lambertVertSrc, lambertFragSrc);
+  const program = link(gl, DEFAULT_LAMBERT_VERTEX_SHADER, DEFAULT_LAMBERT_FRAGMENT_SHADER);
 
   // attributes
   const aPosition = gl.getAttribLocation(program, "aPosition");
@@ -284,7 +286,7 @@ function buildLambert(gl: WebGLRenderingContext | WebGL2RenderingContext) {
    Basic (unlit) program
 ---------------------------------------------------------------------------- */
 function buildBasic(gl: WebGLRenderingContext | WebGL2RenderingContext) {
-  const program = link(gl, basicVertSrc, basicFragSrc);
+  const program = link(gl, DEFAULT_BASIC_VERTEX_SHADER, DEFAULT_BASIC_FRAGMENT_SHADER);
 
   const aPosition = gl.getAttribLocation(program, "aPosition");
 

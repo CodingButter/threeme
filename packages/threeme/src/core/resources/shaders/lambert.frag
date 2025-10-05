@@ -1,36 +1,4 @@
-export const INV_255: number = 1 / 255;
-
-export const BASIC_FRAGMENT_SHADER: string = `precision mediump float;
-
-uniform vec3 uColor;
-uniform bool uUseMap;
-uniform sampler2D uMap;
-
-varying vec2 vUV;
-
-void main() {
-    vec3 color = uColor;
-
-    if(uUseMap) {
-        vec4 texColor = texture2D(uMap, vUV);
-        color = texColor.rgb;
-    }
-    gl_FragColor = vec4(color, 1.0);
-}
-`;
-
-export const BASIC_VERTEX_SHADER: string = `attribute vec3 aPosition;
-attribute vec2 aUV;
-
-uniform mat4 uMVP;
-
-varying vec2 vUV;
-void main() {
-    vUV = aUV;
-    gl_Position = uMVP * vec4(aPosition, 1.0);
-}`;
-
-export const LAMBERT_FRAGMENT_SHADER: string = `precision mediump float;
+precision mediump float;
 
 varying vec3 vNormalW;
 varying vec3 vPositionW; // world-space position from vertex shader
@@ -106,25 +74,4 @@ void main() {
   vec3 color = uAmbient * baseColor + diffuse + plColor;
   color = clamp(color, 0.0, 1.0); // temporary safety; swap for tone mapping later
   gl_FragColor = vec4(color, 1.0);
-}`;
-
-export const LAMBERT_VERTEX_SHADER: string = `// World-space normal path, matching renderer
-attribute vec3 aPosition;
-attribute vec3 aNormal;
-attribute vec2 aUV;
-
-uniform mat4 uModel;         // Model matrix
-uniform mat4 uMVP;           // Projection * View * Model
-uniform mat3 uNormalMatrix;  // inverse-transpose of Model (upper-left 3x3)
-
-varying vec3 vNormalW;
-varying vec3 vPositionW;
-varying vec2 vUV;
-
-void main() {
-    vNormalW = normalize(uNormalMatrix * aNormal);
-    vPositionW = (uModel * vec4(aPosition, 1.0)).xyz;
-    vUV = aUV;
-    gl_Position = uMVP * vec4(aPosition, 1.0);
 }
-`;

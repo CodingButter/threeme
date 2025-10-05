@@ -12,7 +12,7 @@ interface ILoaderErrorHandlers {
 
 const _loading: WeakMap<any, ILoaderErrorHandlers[]> = new WeakMap();
 
-export class ImageLoader extends Loader {
+export class DataLoader extends Loader {
   constructor(manager?: LoadingManager | undefined) {
     super(manager);
   }
@@ -22,11 +22,11 @@ export class ImageLoader extends Loader {
     onLoad: onLoadCallback,
     onProgress: onProgressCallback,
     onError: onErrorCallback
-  ): HTMLImageElement {
+  ): void {
     if (this.path !== undefined) url = `${this.path}${url}`;
     url = this.manager.resolveURL(url);
 
-    const cached = Cache.get<HTMLImageElement>(`image:${url}`);
+    const cached = Cache.get<any>(`data:${url}`);
     if (cached !== undefined) {
       let arr = _loading.get(cached);
       if (arr === undefined) {
@@ -37,17 +37,16 @@ export class ImageLoader extends Loader {
       return cached;
     }
     let remoteFile = new RemoteFile();
-    let tmpImage = new Image();
     remoteFile.crossOrigin = this.crossOrigin;
     remoteFile.referrerPolicy = this.referrerPolicy;
 
-    const onImageLoad = async (response: BetterResponse): Promise<void> => {
+    const onResponse = async (response: BetterResponse): Promise<void> => {
       removeEventListeners();
-      const image = await response.image();
-      if (onLoad) onLoad(image);
+      const dataResponse = response;
+      if (onLoad) onLoad(dataResponse);
 
       const callbacks = _loading.get(remoteFile);
-      callbacks?.forEach(({ onLoad }) => onLoad && onLoad(image));
+      callbacks?.forEach(({ onLoad }) => onLoad && onLoad(dataResponse));
 
       _loading.delete(remoteFile);
       this.manager.itemEnd(url);
@@ -56,7 +55,7 @@ export class ImageLoader extends Loader {
     const onImageError = (event: ErrorEvent): void => {
       removeEventListeners();
       if (onError) onError(event);
-      Cache.remove(`image:${url}`);
+      Cache.remove(`data:${url}`);
 
       const callbacks = _loading.get(remoteFile);
       callbacks?.forEach(({ onError }) => onError && onError(event));
@@ -66,12 +65,12 @@ export class ImageLoader extends Loader {
     };
 
     const removeEventListeners = (): void => {
-      remoteFile.removeEventListener("load", onImageLoad);
+      remoteFile.removeEventListener("load", onResponse);
       remoteFile.removeEventListener("error", onImageError);
       remoteFile.removeEventListener("progress", onProgress);
     };
 
-    remoteFile.addEventListener("load", onImageLoad);
+    remoteFile.addEventListener("load", onResponse);
     remoteFile.addEventListener("error", onImageError);
     remoteFile.addEventListener("progress", onProgress);
 
@@ -79,9 +78,8 @@ export class ImageLoader extends Loader {
       if (this.crossOrigin !== undefined) remoteFile.crossOrigin = this.crossOrigin;
     }
 
-    Cache.add(`image:${url}`, remoteFile);
+    Cache.add(`data:${url}`, remoteFile);
     this.manager.itemsStart(url);
     remoteFile.src = url;
-    return tmpImage;
   }
 }

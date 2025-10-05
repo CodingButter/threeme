@@ -11,7 +11,6 @@ import {
   WebGLRenderer,
   Scene,
   TextureLoader,
-  Texture,
   SphereGeometry,
   MeshBasicMaterial,
   MeshLambertMaterial,
@@ -40,12 +39,10 @@ scene.add(camera);
 
 // ---- geometry & materials -----------------------------------------------
 // Central sphere
-const texture: Texture = TextureLoader.load(asmongold);
-
-const sphere = new Mesh(
-  new BoxGeometry(1, 1, 1),
-  new MeshLambertMaterial({ color: 0xaaaaaa, map: texture })
-);
+const cubeGeo = new BoxGeometry(1, 1, 1);
+const texture = TextureLoader.load(asmongold);
+const sphereMat = new MeshLambertMaterial({ color: 0xffffff, map: texture });
+const sphere = new Mesh(cubeGeo, sphereMat);
 scene.add(sphere);
 
 // ---- lighting ------------------------------------------------------------
