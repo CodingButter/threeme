@@ -53,6 +53,12 @@ export class WebGLRenderer {
   private _ambientRGB: [number, number, number] = [0, 0, 0];
   private _lightDirW = vec3.create();
 
+  /* Clear color */
+  private _clearR = 0;
+  private _clearG = 0;
+  private _clearB = 0;
+  private _clearA = 1;
+
   constructor(params: RendererParams = {}) {
     const {
       canvas = document.createElement("canvas"),
@@ -110,6 +116,10 @@ export class WebGLRenderer {
 
   public setClearColor(color: Hex, alpha = 1): void {
     const [r, g, b] = hexToRgb(color);
+    this._clearR = r;
+    this._clearG = g;
+    this._clearB = b;
+    this._clearA = alpha;
     this.gl.clearColor(r, g, b, alpha);
   }
 
@@ -144,7 +154,7 @@ export class WebGLRenderer {
 
   private beginFrame(): void {
     const gl = this.gl;
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(this._clearR, this._clearG, this._clearB, this._clearA);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   }
 

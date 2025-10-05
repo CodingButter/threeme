@@ -19,7 +19,7 @@ import {
 } from "@acme/threeme";
 import { vec2, vec3 } from "gl-matrix";
 
-import asmongold from "@/assets/asmongold.jpg";
+import alphacube from "@/assets/alphacube.png";
 
 // ---- setup ---------------------------------------------------------------
 const scene = new Scene();
@@ -29,6 +29,7 @@ const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
 document.body.appendChild(canvas);
 const renderer = new WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio || 1);
+renderer.setClearColor(0xcccccc);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 // Camera: a comfortable view
@@ -40,7 +41,7 @@ scene.add(camera);
 // ---- geometry & materials -----------------------------------------------
 // Central sphere
 const cubeGeo = new BoxGeometry(1, 1, 1);
-const texture = TextureLoader.load(asmongold);
+const texture = TextureLoader.load(alphacube);
 
 const sphereMat = new MeshLambertMaterial({ color: 0xffffff, map: texture });
 const sphere = new Mesh(cubeGeo, sphereMat);
