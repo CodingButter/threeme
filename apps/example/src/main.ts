@@ -43,7 +43,11 @@ scene.add(camera);
 const cubeGeo = new BoxGeometry(1, 1, 1);
 const texture = TextureLoader.load(alphacube);
 
-const sphereMat = new MeshLambertMaterial({ color: 0xffffff, map: texture });
+const sphereMat = new MeshLambertMaterial({
+  color: 0xffffff,
+  map: texture,
+  transparent: true
+});
 const sphere = new Mesh(cubeGeo, sphereMat);
 scene.add(sphere);
 
