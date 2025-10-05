@@ -46,7 +46,7 @@ const texture = TextureLoader.load(alphacube);
 const cubeMat = new MeshLambertMaterial({
   color: 0xffffff,
   map: texture,
-  doubleSided: false,
+  doubleSided: true,
   transparent: true,
 });
 const cube = new Mesh(cubeGeo, cubeMat);

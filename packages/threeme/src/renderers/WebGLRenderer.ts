@@ -392,15 +392,43 @@ export class WebGLRenderer {
       const buffers = this.ensureGeometry(obj.geometry);
       const material = obj.material as any;
 
-      // Handle face culling based on doubleSided property
-      if (material && material.doubleSided) {
-        gl.disable(gl.CULL_FACE);
-      } else {
-        gl.enable(gl.CULL_FACE);
-      }
-
       // MVP = VP * Model
       mat4.multiply(this._mvp, this._vp, obj.worldMatrix);
+
+      const isDoubleSided = material && material.doubleSided;
+      const isTransparent =
+        material &&
+        (material.transparent ||
+          (material.opacity !== undefined && material.opacity < 1.0) ||
+          (material.alphaTest !== undefined && material.alphaTest > 0.0));
+
+      // Handle double-sided rendering
+      if (isDoubleSided) {
+        // For double-sided materials, render in two passes
+        gl.enable(gl.CULL_FACE);
+
+        // Pass 1: Render back faces first (important for transparency)
+        gl.cullFace(gl.FRONT);
+        this._drawMesh(buffers, obj, material, dirLight, pointLights);
+
+        // Pass 2: Render front faces
+        gl.cullFace(gl.BACK);
+        this._drawMesh(buffers, obj, material, dirLight, pointLights);
+      } else {
+        // Single-sided: just render front faces
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.BACK);
+        this._drawMesh(buffers, obj, material, dirLight, pointLights);
+      }
+  }
+
+  private _drawMesh(
+    buffers: GLBuffers,
+    obj: Mesh,
+    material: any,
+    dirLight: DirectionalLight | undefined,
+    pointLights: PointLight[]
+  ): void {
 
       // Lit path (Lambert)
       if (material instanceof MeshLambertMaterial && dirLight) {
