@@ -431,15 +431,24 @@ export class WebGLRenderer {
   ): void {
 
       // Lit path (Lambert)
-      if (material instanceof MeshLambertMaterial && dirLight) {
+      if (material instanceof MeshLambertMaterial) {
         // Normal matrix (world-space) for Lambert shader: inverse-transpose of MODEL
         mat3.normalFromMat4(this._normal3, obj.worldMatrix);
 
-        // Light uniforms
-        dirLight.getWorldDirection(this._lightDirW); // ray direction (light→surface)
-
         const base = hexToRgb(material.color);
-        const lcol = hexToRgb(dirLight.color);
+
+        // Directional light (if available)
+        let lightDir: [number, number, number] = [0, 0, 1];
+        let lightColor: [number, number, number] = [0, 0, 0];
+        let lightIntensity = 0;
+
+        if (dirLight) {
+          dirLight.getWorldDirection(this._lightDirW);
+          const lcol = hexToRgb(dirLight.color);
+          lightDir = [this._lightDirW[0], this._lightDirW[1], this._lightDirW[2]];
+          lightColor = [lcol[0], lcol[1], lcol[2]];
+          lightIntensity = dirLight.intensity;
+        }
 
         // Build params object for lambert program
         const lambertParams: LambertParams = {
@@ -447,9 +456,9 @@ export class WebGLRenderer {
           normalMatrix3: this._normal3 as unknown as Float32Array,
           model: obj.worldMatrix as Float32Array, // uModel for vPositionW
           baseColor: [base[0], base[1], base[2]],
-          lightDir: [this._lightDirW[0], this._lightDirW[1], this._lightDirW[2]],
-          lightColor: [lcol[0], lcol[1], lcol[2]],
-          lightIntensity: dirLight.intensity,
+          lightDir,
+          lightColor,
+          lightIntensity,
           ambient: [this._ambientRGB[0], this._ambientRGB[1], this._ambientRGB[2]],
           doubleSided: !!material.doubleSided,
           opacity: material.opacity,

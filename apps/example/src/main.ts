@@ -19,7 +19,7 @@ import {
 } from "@acme/threeme";
 import { vec2, vec3 } from "gl-matrix";
 
-import alphacube from "@/assets/alphacube.png";
+import minecraft_grass from "@/assets/minecraft_grass.png";
 
 // ---- setup ---------------------------------------------------------------
 const scene = new Scene();
@@ -29,7 +29,7 @@ const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
 document.body.appendChild(canvas);
 const renderer = new WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio || 1);
-renderer.setClearColor(0x888888);
+renderer.setClearColor(0x202020);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 // Camera: a comfortable view
@@ -41,12 +41,12 @@ scene.add(camera);
 // ---- geometry & materials -----------------------------------------------
 // Central sphere
 const cubeGeo = new BoxGeometry(1, 1, 1);
-const texture = TextureLoader.load(alphacube);
+const texture = TextureLoader.load(minecraft_grass);
 
 const cubeMat = new MeshLambertMaterial({
   color: 0xffffff,
   map: texture,
-  doubleSided: true,
+  opacity: 0.8,
   transparent: true,
 });
 const cube = new Mesh(cubeGeo, cubeMat);
@@ -60,12 +60,12 @@ scene.add(new AmbientLight(0xffffff, 0.25));
 const sun = new DirectionalLight(0xffffff, 2.0);
 sun.position = vec3.fromValues(5, 5, 5);
 //sun.lookAt(vec3.fromValues(0, 0, 0));
-scene.add(sun);
+//scene.add(sun);
 
 // Two point lights orbiting the sphere
 const pointLightContainer = new Object3D();
-const numOfPointLights = 10;
-const bulbGeo = new SphereGeometry(0.05, 20, 20);
+const numOfPointLights = 20;
+const bulbGeo = new SphereGeometry(0.05, 8, 8);
 const radius = 1.5;
 //create point lights all around the sphere in a sphere shape with random colors
 for (let i = 0; i < numOfPointLights; i++) {
